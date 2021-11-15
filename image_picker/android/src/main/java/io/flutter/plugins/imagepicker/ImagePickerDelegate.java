@@ -262,7 +262,8 @@ public class ImagePickerDelegate
       return;
     }
 
-    launchPickVideoFromGalleryIntent();
+//    launchPickVideoFromGalleryIntent();
+    launchPickVideoFromGallery();
   }
 
   private void launchPickVideoFromGalleryIntent() {
@@ -709,6 +710,19 @@ public class ImagePickerDelegate
     resolveMedias(model,count);
 
   }
+  //video
+  private void launchPickVideoFromGallery(){
+    int count=1;
+    int imageQuality=100;
+    int chooseType = PictureMimeType.ofVideo();
+    PictureSelectionModel model = PictureSelector.create(activity)
+            .openGallery(chooseType);
+    Utils.setLanguage(model, "Language.Chinese");
+    Utils.setPhotoSelectOpt(model, count, imageQuality);
+    //
+    resolveMedias(model,count);
+
+  }
   //
   private void resolveMedias(PictureSelectionModel model,Integer count) {
     model.forResult(new OnResultCallbackListener<LocalMedia>() {
@@ -721,15 +735,17 @@ public class ImagePickerDelegate
 
             if(count==1){
               for (LocalMedia media:medias) {
-//                String path = media.getPath();
-//                String path = fileUtils.getPathFromUri(activity, Uri.parse(ctxPath));
-//                String p=media.getRealPath();
-//                Log.d("test",p);
+                Log.e("image_picker","mimeType="+media.getMimeType());
                 String path = media.getPath();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                   path = media.getAndroidQToPath();
                 }
-                handleImageResult(path, false);
+                Log.e("image_picker","path="+path);
+                if(media.getMimeType().contains("video/")){
+                  handleVideoResult(path);
+                }else{
+                  handleImageResult(path, false);
+                }
                 break;
               }
               return;
