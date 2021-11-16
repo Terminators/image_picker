@@ -330,7 +330,7 @@ public class ImagePickerDelegate
     //    launchMultiPickImageFromGalleryIntent();
 //    Integer count =methodCall.argument("count");
     Integer imageQuality = methodCall.argument("imageQuality");
-    launchMultiPickImageFromGallery(1,imageQuality);
+    launchPickImageFromGallery(1,imageQuality);
   }
 
   public void chooseMultiImageFromGallery(MethodCall methodCall, MethodChannel.Result result) {
@@ -696,6 +696,19 @@ public class ImagePickerDelegate
   }
 
 
+  private void launchPickImageFromGallery(@Nullable Integer imageQuality){
+    int count=1;
+    if(imageQuality==null) imageQuality=100;
+    //
+    int chooseType = PictureMimeType.ofImage();
+    PictureSelectionModel model = PictureSelector.create(activity)
+            .openGallery(chooseType);
+    Utils.setLanguage(model, "Language.Chinese");
+    Utils.setPhotoSelectOpt(model, count, imageQuality);
+    //
+    resolveImageMedias(model);
+
+  }
   //io.github.lucksiege:pictureselector:v2.7.3-rc09
   private void launchMultiPickImageFromGallery(@Nullable Integer count,@Nullable Integer imageQuality){
     if(count==null) count=9;
@@ -707,7 +720,7 @@ public class ImagePickerDelegate
     Utils.setLanguage(model, "Language.Chinese");
     Utils.setPhotoSelectOpt(model, count, imageQuality);
     //
-    resolveMedias(model,count);
+    resolveMultiMedias(model,count);
 
   }
   //video
@@ -720,11 +733,43 @@ public class ImagePickerDelegate
     Utils.setLanguage(model, "Language.Chinese");
     Utils.setPhotoSelectOpt(model, count, imageQuality);
     //
-    resolveMedias(model,count);
+    resolveVideoMedias(model);
 
   }
   //
-  private void resolveMedias(PictureSelectionModel model,Integer count) {
+  private void resolveMultiMedias(PictureSelectionModel model,Integer count) {
+    model.forResult(new OnResultCallbackListener<LocalMedia>() {
+      @Override
+      public void onResult(final List<LocalMedia> medias) {
+        // 结果回调
+        new Thread() {
+          @Override
+          public void run() {
+            ArrayList<String> paths = new ArrayList<>();
+            for (LocalMedia media:medias) {
+//              HashMap<String, Object> map = new HashMap<String, Object>();
+              String path = media.getPath();
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                path = media.getAndroidQToPath();
+              }
+              paths.add(path);
+            }
+
+            handleMultiImageResult(paths, false);
+
+          }
+        }.start();
+      }
+      @Override
+      public void onCancel() {
+        // 取消
+//        _result.success(null);
+        finishWithListSuccess(null);
+      }
+    });
+  }
+  ///
+  private void resolveImageMedias(PictureSelectionModel model) {
     model.forResult(new OnResultCallbackListener<LocalMedia>() {
       @Override
       public void onResult(final List<LocalMedia> medias) {
@@ -733,7 +778,7 @@ public class ImagePickerDelegate
           @Override
           public void run() {
 
-            if(count==1){
+
               for (LocalMedia media:medias) {
                 Log.e("image_picker","mimeType="+media.getMimeType());
                 String path = media.getPath();
@@ -741,40 +786,42 @@ public class ImagePickerDelegate
                   path = media.getAndroidQToPath();
                 }
                 Log.e("image_picker","path="+path);
-                if(media.getMimeType().contains("video/")){
-                  handleVideoResult(path);
-                }else{
-                  handleImageResult(path, false);
+                handleImageResult(path, false);
+              }
+
+          }
+        }.start();
+      }
+      @Override
+      public void onCancel() {
+        // 取消
+//        _result.success(null);
+        finishWithListSuccess(null);
+      }
+    });
+  }
+  //
+  private void resolveVideoMedias(PictureSelectionModel model) {
+    model.forResult(new OnResultCallbackListener<LocalMedia>() {
+      @Override
+      public void onResult(final List<LocalMedia> medias) {
+        // 结果回调
+        new Thread() {
+          @Override
+          public void run() {
+
+
+              for (LocalMedia media:medias) {
+                Log.e("image_picker", "mimeType=" + media.getMimeType());
+                String path = media.getPath();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                  path = media.getAndroidQToPath();
                 }
+                Log.e("image_picker", "path=" + path);
+                handleVideoResult(path);
+
                 break;
               }
-              return;
-            }
-
-            ArrayList<String> paths = new ArrayList<>();
-            for (LocalMedia media:medias) {
-//              HashMap<String, Object> map = new HashMap<String, Object>();
-              String path = media.getPath();
-              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                path = media.getAndroidQToPath();
-              }
-
-////              if (media.isCut()) path = media.getCutPath();
-////              if (media.isCompressed()) path = media.getCompressPath();
-//              if (media.getMimeType().contains("image")) {
-//                if (media.isCut()) path = media.getCutPath();
-//                if (media.isCompressed()) path = media.getCompressPath();
-//              }
-//              path = copyToTmp(path);
-//              map.put("path", path);
-
-              paths.add(path);
-            }
-
-//            PictureFileUtils.deleteCacheDirFile(context, type);
-//            PictureFileUtils.deleteAllCacheDirFile(context);
-            handleMultiImageResult(paths, false);
-
           }
         }.start();
       }
