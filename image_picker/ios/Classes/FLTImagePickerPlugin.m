@@ -561,7 +561,7 @@ didFinishPicking:(NSArray<PHPickerResult *> *)results API_AVAILABLE(ios(14)) {
         [operationQueue waitUntilAllOperationsAreFinished];
         dispatch_async(dispatch_get_main_queue(), ^{
             //  NSLog(@"block....");
-            [self handleSavedPathList:pathList];
+            [self handleMultiSavedPathList:pathList];
         });
         // NSLog(@"end....");
     });
@@ -897,5 +897,27 @@ didFinishPickingMediaWithInfo:(NSDictionary<NSString *, id> *)info {
     self.result = nil;
     _arguments = nil;
 }
-
+- (void)handleMultiSavedPathList:(NSArray *)pathList {
+    if (!self.result) {
+        return;
+    }
+    
+    if (pathList) {
+        if (![pathList containsObject:[NSNull null]]) {
+            
+            self.result(pathList.firstObject);
+        } else {
+            self.result([FlutterError errorWithCode:@"create_error"
+                                            message:@"pathList's items should not be null"
+                                            details:nil]);
+        }
+    } else {
+        // This should never happen.
+        self.result([FlutterError errorWithCode:@"create_error"
+                                        message:@"pathList should not be nil"
+                                        details:nil]);
+    }
+    self.result = nil;
+    _arguments = nil;
+}
 @end
